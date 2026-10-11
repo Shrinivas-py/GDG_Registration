@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "server": "node server/index.js",
-    "test": "node --test test/registrations.test.js",
+    "test": "node --test test/*.test.js",
     "build": "vite build",
     "preview": "vite preview",
     "load-test": "node scripts/load-test.js"

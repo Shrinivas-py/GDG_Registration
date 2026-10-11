@@ -5,8 +5,8 @@ import { createApp } from '../server/app.js'
 
 const valid = { name: 'Ada Lovelace', usnOrSrno: '001CS42', email: 'Ada@Example.com', branch: 'CSE', year: '1st Year' }
 
-function appWith(insert, resolveCanonicalSrNo = async () => null) {
-  return createApp({ repository: { insert, resolveCanonicalSrNo }, frontendOrigin: 'http://localhost:5173' })
+function appWith(createRegistration) {
+  return createApp({ repository: { createRegistration }, frontendOrigin: 'http://localhost:5173' })
 }
 
 test('valid registration returns 201 only after repository save', async () => {
@@ -18,7 +18,6 @@ test('valid registration returns 201 only after repository save', async () => {
   assert.equal(response.status, 201)
   assert.equal(saved[0].email, 'ada@example.com')
   assert.equal(saved[0].normalizedIdentifier, '001cs42')
-  assert.equal(saved[0].canonicalSrNo, '001cs42')
 })
 
 test('missing fields return 400', async () => {
@@ -53,27 +52,20 @@ test('duplicate SrNo uses the canonical duplicate constraint', async () => {
   assert.equal(response.body.field, 'usnOrSrno')
 })
 
-test('mapped USN resolves to the authoritative SrNo before insert', async () => {
-  const saved = []
+test('mapped USN is passed to the atomic registration operation', async () => {
   const response = await request(appWith(async (value) => {
-    saved.push(value)
+    assert.equal(value.usnOrSrno, 'USN123')
     return { id: 'mapped', created_at: new Date().toISOString() }
-  }, async (identifier) => {
-    assert.equal(identifier, 'usn123')
-    return '00042'
   })).post('/api/registrations').send({ ...valid, usnOrSrno: 'USN123' })
   assert.equal(response.status, 201)
-  assert.equal(saved[0].canonicalSrNo, '00042')
 })
 
-test('missing USN mapping uses the entered normalized value as a provisional SrNo candidate', async () => {
-  const saved = []
+test('unknown identifiers are passed to the atomic registration operation', async () => {
   const response = await request(appWith(async (value) => {
-    saved.push(value)
+    assert.equal(value.usnOrSrno, 'USN-NOT-MAPPED')
     return { id: 'unmapped', created_at: new Date().toISOString() }
   })).post('/api/registrations').send({ ...valid, usnOrSrno: 'USN-NOT-MAPPED' })
   assert.equal(response.status, 201)
-  assert.equal(saved[0].canonicalSrNo, 'usn-not-mapped')
 })
 
 test('database failure never returns success', async () => {

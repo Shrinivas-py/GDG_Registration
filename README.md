@@ -13,8 +13,20 @@ Phase 2 adds a JavaScript Express API backed by Supabase PostgreSQL while preser
 ## Supabase setup
 
 1. Create a Supabase project at [supabase.com](https://supabase.com/).
-2. In the Supabase SQL editor or with the Supabase CLI, apply [`supabase/migrations/20261011230000_create_registrations.sql`](./supabase/migrations/20261011230000_create_registrations.sql).
-3. The migration creates `public.registrations`, generated normalized email and identifier columns, independent unique constraints, branch/year checks, a created-at index, and RLS that denies `anon` and `authenticated` table access. The server-only Supabase secret key is used for the insert API and must never be exposed to Vite.
+2. Apply [`supabase/migrations/20261011230000_create_registrations.sql`](./supabase/migrations/20261011230000_create_registrations.sql) if starting from an empty project.
+3. Apply [`supabase/migrations/20261011233000_reconcile_registration_schema.sql`](./supabase/migrations/20261011233000_reconcile_registration_schema.sql) to existing installations or after the initial migration. It is forward-only, preserves rows, fails before constraints when unresolved null/duplicate data exists, creates the mapping table and atomic RPC, and refreshes PostgREST.
+4. Run the read-only checks in [`supabase/diagnostics.sql`](./supabase/diagnostics.sql) before accepting registrations.
+5. The server-only Supabase secret key is used for the RPC and must never be exposed to Vite. Anonymous and authenticated table/RPC access is revoked; only the server's `service_role` can execute the registration function.
+
+For an existing project, open the SQL editor and run the files in this order:
+
+```text
+supabase/migrations/20261011230000_create_registrations.sql
+supabase/migrations/20261011233000_reconcile_registration_schema.sql
+supabase/diagnostics.sql
+```
+
+If the first file was already applied, do not rerun it; run only the reconciliation migration and then the diagnostics. The reconciliation migration is the repair for the observed errors: `PGRST205` meant `student_identifier_map` was absent from the exposed schema, `PGRST204` meant `canonical_sr_no` was absent from `registrations`, and `42501` meant the caller lacked access to the mapping table. The new RPC avoids direct table access from the API and is executable only by the server role.
 
 ## Environment
 
@@ -70,7 +82,7 @@ The public field remains `USN / SrNo`. The migration adds `student_identifier_ma
 
 No mapping data is currently present in this repository. Until the college supplies and imports that mapping, an unmapped value is treated as a provisional SrNo candidate so direct duplicate SrNo submissions remain protected, but cross-identifier USN/SrNo duplicate prevention is **not solved**. The API does not infer mappings from names, branch, year, or identifier shape, and does not fuzzy-match or merge records.
 
-If the original migration was already applied, do not edit or rerun it as a replacement. Apply the incremental [`supabase/migrations/20261011231500_add_canonical_sr_no_mapping.sql`](./supabase/migrations/20261011231500_add_canonical_sr_no_mapping.sql), which creates the mapping table and adds `canonical_sr_no` without dropping registrations.
+If a migration stops with a conflict message, do not delete rows automatically. Use the diagnostic queries to identify the conflict and resolve it with an approved college data decision, then rerun the forward migration. After applying it, run `NOTIFY pgrst, 'reload schema';` if PostgREST still reports `PGRST204`, `PGRST205`, or `PGRST202`.
 
 ## Tests and load test
 

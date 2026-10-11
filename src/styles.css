@@ -66,3 +66,6 @@ legend { margin-bottom:10px; }
   .container { width:min(100% - 32px,600px); }.registration-page { padding:48px 0 65px; }.registration-layout { display:block; }.registration-intro { padding-top:0; margin-bottom:38px; }.chapter-brand { margin-bottom:32px; }.registration-intro h1 { font-size:56px; }.intro-note { margin-top:30px; }.info-visuals { max-width:none; }.form-card { padding:25px 19px 24px; }.footer-inner { align-items:flex-start; flex-direction:column; gap:15px; }
 }
 @media (max-width:420px) { .registration-intro h1 { font-size:49px; }.brand img { width:220px; }.info-visuals { grid-template-columns:1fr; }.radio-grid { grid-template-columns:repeat(2,1fr); }.field-label { align-items:flex-start; flex-direction:column; gap:2px; } }
+
+
+

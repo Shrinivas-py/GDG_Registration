@@ -40,27 +40,24 @@ export function createApp({ repository, frontendOrigin = '' } = {}) {
     if (!registrationRepository) return res.status(503).json({ message: 'Registration service is unavailable. Please try again later.' })
 
     try {
-      const mappedSrNo = registrationRepository.resolveCanonicalSrNo
-        ? await registrationRepository.resolveCanonicalSrNo(result.value.normalizedIdentifier)
-        : null
-      const registration = {
-        ...result.value,
-        canonicalSrNo: mappedSrNo || result.value.normalizedIdentifier,
-      }
-      const saved = await registrationRepository.insert(registration)
+      const saved = await registrationRepository.createRegistration(result.value)
       return res.status(201).json({ id: saved.id, createdAt: saved.created_at })
     } catch (error) {
       if (error?.code === '23505' && duplicateConstraints.has(error.constraint)) {
         const field = error.constraint.includes('email') ? 'email' : 'usnOrSrno'
         return res.status(409).json({ message: field === 'email' ? 'This email address is already registered.' : 'This USN or serial number is already registered.', field })
       }
-      console.error('Registration database request failed:', {
+      const databaseContext = {
         code: error?.code || 'unknown',
         message: error?.message || 'unknown database error',
         details: error?.details || undefined,
         hint: error?.hint || undefined,
-        table: error?.table || 'registrations',
-      })
+        operation: 'create_registration RPC',
+      }
+      console.error('Registration database request failed:', databaseContext)
+      if (['PGRST204', 'PGRST205', 'PGRST202', '42501'].includes(error?.code)) {
+        return res.status(503).json({ message: 'Registration service schema or permissions need configuration. Please contact the administrator.' })
+      }
       return res.status(503).json({ message: 'Registration could not be saved. Please try again later.' })
     }
   })
