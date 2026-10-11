@@ -1,0 +1,32 @@
+{
+  "name": "registration",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "server": "node server/index.js",
+    "test": "node --test test/registrations.test.js",
+    "build": "vite build",
+    "preview": "vite preview",
+    "load-test": "node scripts/load-test.js"
+  },
+  "devDependencies": {
+    "supertest": "^7.3.1",
+    "vite": "^8.3.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.3",
+    "@tailwindcss/vite": "^4.3.3",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.7",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
+    "lucide-react": "^1.55.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-router-dom": "^7.18.4",
+    "tailwindcss": "^4.3.3"
+  }
+}
