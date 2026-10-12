@@ -76,22 +76,15 @@ Phase 1 — Registration backend
 Existing registration form, validation, Supabase and application tests.
 
 
-
 Phase 2 — QR tickets Current phase
-
 Generate a unique secure ticket, save it in the database, show it on the success screen, and let students download it.
-
 
 
 Phase 3 — Email delivery
 Send each student their ticket and QR code by email.
 
-
-
 Phase 4 — Admin portal
 Secure login, registration management and attendance overview.
-
-
 
 Phase 5 — Event-day scanning
 Verify tickets against Supabase and automatically record attendance, rejecting invalid and previously used tickets.
