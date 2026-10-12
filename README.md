@@ -88,3 +88,30 @@ Secure login, registration management and attendance overview.
 
 Phase 5 — Event-day scanning
 Verify tickets against Supabase and automatically record attendance, rejecting invalid and previously used tickets.
+
+
+## Duplicates (each should be rejected with the red message)
+
+#	What to enter	Expected
+1	Same Sr. No. 24-0540, new USN, new email	“Sr. No. already registered”
+2	New Sr. No. 24-0541, USN typed 1js24is160, new email	“USN already registered”
+3	New Sr. No., new USN, email SHRINIVASRJAHAGIRDAR8@GMAIL.COM	“email already registered”
+4	New Sr. No., email shrinivas.rjahagirdar8@gmail.com (dot added)	“email already registered”
+5	New Sr. No., email shrinivasrjahagirdar8+test@gmail.com	“email already registered”
+
+Should succeed
+
+#	What to enter	Expected
+6	24-0542, no USN, a@test.com	saved
+7	24-0543, no USN, b@test.com	saved (two blank USNs don’t collide)
+8	Sr. No. typed with spaces around it, 24-0544	saved as 24-0544
+
+Invalid input (should be rejected, nothing saved)
+
+#	What to enter	Expected
+9	USN 1JS24IS16 (9 chars)	rejected
+10	USN 2JS24IS160 (wrong prefix)	rejected
+11	Sr. No. 240540 or 24-054	rejected
+12	Name A (one character) or just spaces	rejected
+13	Email abc@ or abc@gmail	rejected
+14	Double-click Submit fast with fresh valid data	only one row
