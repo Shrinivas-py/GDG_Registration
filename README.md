@@ -69,6 +69,3 @@ Tests use mocked repositories and do not require Supabase credentials. The optio
 $env:LOAD_TEST_URL="http://localhost:3001"; npm run load-test
 ```
 
-## Known limitation
-
-USN and Sr. No. are independent identifiers; duplicates are detected per identifier and per email only. The same student using a different Sr. No. or email cannot be detected without an official roster.
