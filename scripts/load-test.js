@@ -7,7 +7,7 @@ const requests = Array.from({ length: count }, (_, index) => fetch(`${baseUrl}/a
   headers: { 'content-type': 'application/json' },
   body: JSON.stringify({
     name: `Load Test ${runId}-${index}`,
-    usnOrSrno: `LOAD-${runId}-${index}`,
+    sr_no: `${String(index % 100).padStart(2, '0')}-${String(runId + index).slice(-4)}`,
     email: `load-${runId}-${index}@example.invalid`,
     branch: 'CSE',
     year: '1st Year',

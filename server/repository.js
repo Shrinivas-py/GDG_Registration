@@ -1,16 +1,21 @@
 export function createRegistrationRepository({ supabase }) {
   return {
     async createRegistration(registration) {
-      const { data, error } = await supabase.rpc('create_registration', {
-        p_name: registration.name,
-        p_usn_or_srno: registration.usnOrSrno,
-        p_email: registration.email,
-        p_branch: registration.branch,
-        p_year: registration.year,
-      })
+      const { data, error } = await supabase
+        .from('registrations')
+        .insert({
+          name: registration.name,
+          sr_no: registration.sr_no,
+          usn: registration.usn,
+          email: registration.email,
+          branch: registration.branch,
+          year: registration.year,
+        })
+        .select('id, created_at')
+        .single()
 
       if (error) throw error
-      return Array.isArray(data) ? data[0] : data
+      return data
     },
   }
 }

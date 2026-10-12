@@ -19,6 +19,4 @@ const app = createApp({
 })
 const port = Number(process.env.PORT || 3001)
 
-app.listen(port, () => {
-  console.log(`Registration API listening on port ${port}`)
-})
+app.listen(port, () => console.log(`Registration API listening on port ${port}`))

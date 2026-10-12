@@ -23,7 +23,7 @@ function Field({ label, required, hint, error, children }) {
 }
 
 function RegistrationPage() {
-  const [form, setForm] = useState({ name: '', id: '', branch: '', year: '', email: '' })
+  const [form, setForm] = useState({ name: '', sr_no: '', usn: '', branch: '', year: '', email: '', honeypot: '' })
   const [errors, setErrors] = useState({})
   const [submitState, setSubmitState] = useState('idle')
   const [submitMessage, setSubmitMessage] = useState('')
@@ -36,7 +36,7 @@ function RegistrationPage() {
   const validate = () => {
     const next = {}
     if (!form.name.trim()) next.name = 'Please enter your full name.'
-    if (!form.id.trim()) next.id = 'Please enter your USN or college serial number.'
+    if (!form.sr_no.trim()) next.sr_no = 'Please enter your Sr. No.'
     if (!form.branch) next.branch = 'Please choose your branch.'
     if (!form.year) next.year = 'Please choose your year.'
     if (!form.email.trim()) next.email = 'Please enter your email address.'
@@ -53,7 +53,7 @@ function RegistrationPage() {
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/registrations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: form.name, usnOrSrno: form.id, email: form.email, branch: form.branch, year: form.year }),
+        body: JSON.stringify(form),
       })
       const payload = await response.json().catch(() => ({}))
       if (response.status === 201) {
@@ -62,11 +62,11 @@ function RegistrationPage() {
       } else if (response.status === 400) {
         setSubmitState('error')
         const serverErrors = payload.errors || {}
-        setErrors((current) => ({ ...current, ...serverErrors, id: serverErrors.usnOrSrno || current.id }))
+        setErrors((current) => ({ ...current, ...serverErrors }))
         setSubmitMessage(payload.message || 'Please correct the highlighted fields.')
       } else if (response.status === 409) {
         setSubmitState('error')
-        setSubmitMessage(payload.message || 'This email or USN / SrNo is already registered.')
+        setSubmitMessage(payload.message || 'This email, USN, or Sr. No. is already registered.')
       } else if (response.status === 429) {
         setSubmitState('error')
         setSubmitMessage(payload.message || 'Too many attempts. Please try again later.')
@@ -95,10 +95,12 @@ function RegistrationPage() {
       <div className="form-card-head"><div><p className="kicker">Chapter 2.0</p><h2 id="registration-title">Register your interest</h2></div><span className="step-badge">01 / 01</span></div>
       <form onSubmit={submit} noValidate>
         <Field label="Full Name" required error={errors.name}><input value={form.name} onChange={(event) => update('name', event.target.value)} placeholder="Your full name" autoComplete="name" /></Field>
-        <Field label="USN / SrNo" required hint="USN or college serial number" error={errors.id}><input value={form.id} onChange={(event) => update('id', event.target.value)} placeholder="e.g. 1XX22CS000" autoComplete="off" /></Field>
+        <Field label="Sr. No." required hint="Format: 24-0540" error={errors.sr_no}><input value={form.sr_no} onChange={(event) => update('sr_no', event.target.value)} placeholder="24-0540" autoComplete="off" /></Field>
+        <Field label="USN (if you have one)" hint="Format: 1JS24IS160" error={errors.usn}><input value={form.usn} onChange={(event) => update('usn', event.target.value)} placeholder="1JS24IS160" autoComplete="off" /></Field>
         <fieldset className={errors.branch ? 'has-error' : ''}><legend>Branch <span className="required">*</span></legend><div className="radio-grid">{branches.map((branch) => <label className="radio-option" key={branch}><input type="radio" name="branch" value={branch} checked={form.branch === branch} onChange={(event) => update('branch', event.target.value)} /><span>{branch}</span></label>)}</div>{errors.branch && <p className="error-text" role="alert">{errors.branch}</p>}</fieldset>
         <Field label="Year" required error={errors.year}><div className="select-wrap"><select value={form.year} onChange={(event) => update('year', event.target.value)}><option value="">Select your year</option>{years.map((year) => <option key={year}>{year}</option>)}</select><ChevronDown size={17} /></div></Field>
         <Field label="Email ID" required hint="Personal or college email" error={errors.email}><input type="email" value={form.email} onChange={(event) => update('email', event.target.value)} placeholder="you@example.com" autoComplete="email" /></Field>
+        <input value={form.honeypot} onChange={(event) => update('honeypot', event.target.value)} tabIndex="-1" autoComplete="off" aria-hidden="true" style={{ position: 'absolute', left: '-10000px', width: 1, height: 1 }} />
         {submitState === 'success' && <div className="submission-success" role="status"><strong>Registration saved</strong><span>{submitMessage}</span></div>}
         {submitState === 'error' && <div className="submission-error" role="alert"><strong>Unable to save registration</strong><span>{submitMessage}</span></div>}
         <button className="button submit-button" type="submit" disabled={submitState === 'loading' || submitState === 'success'}>{submitState === 'loading' ? 'Saving registration…' : submitState === 'success' ? 'Registration saved' : 'Submit registration'} <ArrowRight size={18} /></button>
@@ -123,4 +125,3 @@ function App() {
 export default App
 
 //added
-
