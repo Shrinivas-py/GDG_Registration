@@ -17,7 +17,7 @@ test('successful registration normalizes fields and supports no USN', async () =
   const response = await request(appWith(async (value) => {
     saved.push(value)
     return { id: 'registration-id' }
-  })).post('/api/registrations').send({ ...valid, usn: '', name: '  Ada   Lovelace  ', sr_no: ' 24 – 0540 ' })
+  })).post('/api/registrations').send({ ...valid, usn: '', name: '  Ada   Lovelace  ', sr_no: ' 24-0540 ' })
   assert.equal(response.status, 201)
   assert.equal(response.body.success, true)
   assert.equal(saved[0].name, 'Ada Lovelace')
@@ -59,6 +59,19 @@ test('USN accepts lowercase after normalization and rejects wrong format', async
   const invalid = await request(appWith(async () => ({}))).post('/api/registrations').send({ ...valid, usn: '2JS24IS16' })
   assert.equal(invalid.status, 400)
   assert.ok(invalid.body.errors.usn)
+})
+
+test('rejects zero identifier serial portions before saving', async () => {
+  for (const field of ['sr_no', 'usn']) {
+    let calls = 0
+    const response = await request(appWith(async () => { calls += 1 })).post('/api/registrations').send({
+      ...valid,
+      [field]: field === 'sr_no' ? '24-0000' : '1JS24IS000',
+    })
+    assert.equal(response.status, 400)
+    assert.ok(response.body.errors[field])
+    assert.equal(calls, 0)
+  }
 })
 
 test('non-string and extra fields are rejected', async () => {

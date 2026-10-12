@@ -5,6 +5,7 @@ import gdgMark from './assets/image1.jpeg'
 import chapterInfo from './assets/image2.jpeg'
 import gdgInfo from './assets/image3.jpeg'
 import chapterBrand from './assets/image4.jpeg'
+import { normalizeSrNo, normalizeUsn, validateSrNo, validateUsn } from '../shared/identifierValidation.js'
 
 const branches = ['CSE', 'ISE', 'CSE(AIML)', 'ECE', 'EIE', 'RA', 'MECH', 'CIV']
 const years = ['1st Year', '2nd Year', '3rd Year', '4th Year']
@@ -36,7 +37,10 @@ function RegistrationPage() {
   const validate = () => {
     const next = {}
     if (!form.name.trim()) next.name = 'Please enter your full name.'
-    if (!form.sr_no.trim()) next.sr_no = 'Please enter your Sr. No.'
+    const srNoError = validateSrNo(normalizeSrNo(form.sr_no))
+    if (srNoError) next.sr_no = srNoError
+    const usnError = validateUsn(normalizeUsn(form.usn))
+    if (usnError) next.usn = usnError
     if (!form.branch) next.branch = 'Please choose your branch.'
     if (!form.year) next.year = 'Please choose your year.'
     if (!form.email.trim()) next.email = 'Please enter your email address.'

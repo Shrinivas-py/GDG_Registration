@@ -32,6 +32,8 @@ Before resetting an existing installation, open the Supabase Dashboard SQL Edito
 
 The setup schema includes the future QR and check-in columns but this phase does not use them.
 
+For an existing installation, apply [`supabase/identifier-constraints.sql`](./supabase/identifier-constraints.sql) as a forward-only migration. It changes only the identifier check constraints and does not drop tables or registration rows.
+
 ## Install and run
 
 ```bash

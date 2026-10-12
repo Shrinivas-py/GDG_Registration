@@ -39,8 +39,8 @@ create table public.registrations (
   created_at timestamptz not null default now(),
 
   constraint name_valid   check (name = btrim(name) and length(name) between 2 and 100),
-  constraint sr_no_valid  check (sr_no ~ '^\d{2}-\d{4}$'),
-  constraint usn_valid    check (usn is null or usn ~ '^1JS\d{2}[A-Z]{2}\d{3}$'),
+  constraint sr_no_valid  check (sr_no ~ '^[0-9]{2}-[0-9]{4}$' and right(sr_no, 4) <> '0000'),
+  constraint usn_valid    check (usn is null or (usn ~ '^1JS[0-9]{2}[A-Z]{2}[0-9]{3}$' and right(usn, 3) <> '000')),
   constraint email_valid  check (email = lower(btrim(email)) and length(email) <= 254
                                  and email ~ '^[^\s@]+@[^\s@]+\.[^\s@]+$'),
   constraint branch_valid check (branch in ('CSE','ISE','CSE(AIML)','ECE','EIE','RA','MECH','CIV')),

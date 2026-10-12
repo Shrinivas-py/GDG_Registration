@@ -11,8 +11,11 @@ Executed with `npm test` on 2026-10-12. The suite uses mocked repositories and a
 | All configured branches | Accepted | All 8 branches accepted | PASS |
 | All configured years | Accepted | All 4 years accepted | PASS |
 | Name validation | Blank, short, and overlong names rejected | Returned `400` with name errors | PASS |
-| Sr. No. validation | Invalid formats rejected | Returned `400` with Sr. No. errors | PASS |
-| USN validation | Invalid formats rejected; lowercase valid input normalized | Returned `400` for invalid values and normalized valid input | PASS |
+| Sr. No. validation | Invalid formats, incorrect lengths, and internal whitespace rejected | Returned `400` with Sr. No. errors | PASS |
+| Sr. No. zero serial | `00-0000` and `24-0000` rejected and not saved | Returned `400`; repository was not called | PASS |
+| USN validation | Invalid formats, incorrect lengths, internal whitespace, and lowercase input handled correctly | Returned `400` for invalid values and normalized valid input | PASS |
+| USN zero serial | `1JS24IS000` rejected and not saved | Returned `400`; repository was not called | PASS |
+| Missing optional USN | Accepted and normalized to `null` | Valid requests returned `201`; stored value was `null` | PASS |
 | Email validation | Malformed and overlong addresses rejected | Returned `400` with email errors | PASS |
 | Branch and year validation | Unsupported values rejected | Returned `400` with field errors | PASS |
 | Name/Sr. No./USN/email normalization | Whitespace, Unicode dash, case, and zero-width input normalized | Expected normalized values observed | PASS |
@@ -31,6 +34,6 @@ Executed with `npm test` on 2026-10-12. The suite uses mocked repositories and a
 
 ## Summary
 
-- **24 tests passed, 0 failed, 0 skipped**
+- **26 tests passed, 0 failed, 0 skipped**
 - `npm run build` also completed successfully. Vite emitted existing third-party `"use client"` directive warnings only.
 - The test run exposed and fixed two backend issues: duplicate constraint names were not read from `error.constraint`, and the SQL email key incorrectly stripped plus-tags from non-Gmail providers.

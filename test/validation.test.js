@@ -16,7 +16,7 @@ test('normalizes name, Sr. No., USN, and email', () => {
   const result = validateRegistration({
     ...valid,
     name: '  Ada   Lovelace  ',
-    sr_no: ' 24 – 0540 ',
+    sr_no: ' 24-0540 ',
     usn: ' 1js24is160 ',
     email: '  ADA@Example.COM ',
   })
@@ -49,8 +49,14 @@ test('rejects invalid name, Sr. No., USN, email, branch, and year', () => {
     ['name', 'x'.repeat(101), 'name'],
     ['sr_no', '24/0540', 'sr_no'],
     ['sr_no', '24-540', 'sr_no'],
+    ['sr_no', '00-0000', 'sr_no'],
+    ['sr_no', '24-0000', 'sr_no'],
+    ['sr_no', '24-00000', 'sr_no'],
+    ['sr_no', '24 - 0540', 'sr_no'],
     ['usn', '2JS24IS160', 'usn'],
     ['usn', '1JS24IS16', 'usn'],
+    ['usn', '1JS24IS000', 'usn'],
+    ['usn', '1JS24IS 160', 'usn'],
     ['email', 'not-an-email', 'email'],
     ['email', 'a@b', 'email'],
     ['email', `a@${'x'.repeat(250)}.com`, 'email'],
@@ -69,6 +75,13 @@ test('normalizes a missing USN to null', () => {
   const result = validateRegistration({ ...valid, usn: ' \u200B ' })
   assert.equal(result.valid, true)
   assert.equal(result.value.usn, null)
+})
+
+test('accepts valid non-zero identifier serial portions', () => {
+  for (const sr_no of ['00-0001', '24-0001', '99-9999']) {
+    assert.equal(validateRegistration({ ...valid, sr_no }).valid, true, sr_no)
+  }
+  assert.equal(validateRegistration({ ...valid, usn: ' 1js24is160 ' }).valid, true)
 })
 
 test('rejects malformed request shapes, non-text fields, and unexpected fields', () => {

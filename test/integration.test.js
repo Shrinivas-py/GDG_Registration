@@ -50,7 +50,7 @@ test('stores normalized values and SQL-NULL-equivalent missing USNs', async () =
   const response = await request(appFor(database)).post('/api/registrations').send({
     ...valid,
     name: '  Ada   Lovelace ',
-    sr_no: '24 – 0540',
+    sr_no: ' 24-0540 ',
     usn: ' ',
     email: ' ADA@Example.COM ',
   })
