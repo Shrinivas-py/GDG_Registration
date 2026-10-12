@@ -29,7 +29,7 @@ create table public.registrations (
   email_key text generated always as (
     case when split_part(email, '@', 2) in ('gmail.com', 'googlemail.com')
       then replace(split_part(split_part(email, '@', 1), '+', 1), '.', '') || '@gmail.com'
-      else split_part(split_part(email, '@', 1), '+', 1) || '@' || split_part(email, '@', 2)
+      else email
     end
   ) stored,
   qr_token text not null unique

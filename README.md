@@ -63,9 +63,8 @@ npm test
 npm run build
 ```
 
-Tests use mocked repositories and do not require Supabase credentials. The optional load-test script is for a non-production environment only:
+Tests use mocked repositories and a fresh in-memory integration database; they do not require Supabase credentials and cannot modify production registrations. The optional load-test script is for a non-production environment only:
 
 ```powershell
 $env:LOAD_TEST_URL="http://localhost:3001"; npm run load-test
 ```
-

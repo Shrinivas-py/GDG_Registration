@@ -16,7 +16,7 @@ function isAllowedOrigin(origin, configuredOrigin) {
 }
 
 function duplicateMessage(error) {
-  const text = `${error?.message || ''} ${error?.details || ''}`
+  const text = `${error?.constraint || ''} ${error?.message || ''} ${error?.details || ''}`
   for (const [name, message] of Object.entries(duplicateMessages)) {
     if (text.includes(name)) return message
   }
