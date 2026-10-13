@@ -2,6 +2,7 @@ import 'dotenv/config'
 import { createClient } from '@supabase/supabase-js'
 import { createApp } from './app.js'
 import { createRegistrationRepository } from './repository.js'
+import { createAdminAuth, parseAdminAllowlist } from './auth.js'
 
 const required = ['SUPABASE_URL', 'SUPABASE_SECRET_KEY']
 const missing = required.filter((name) => !process.env[name])
@@ -13,9 +14,15 @@ if (missing.length) {
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SECRET_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
+const frontendOrigin = process.env.FRONTEND_ORIGIN || 'http://localhost:5173'
 const app = createApp({
   repository: createRegistrationRepository({ supabase }),
-  frontendOrigin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173',
+  frontendOrigin,
+  adminAuth: createAdminAuth({
+    supabase,
+    allowedEmails: parseAdminAllowlist(process.env.ADMIN_EMAIL_ALLOWLIST),
+  }),
+  adminAuthConfigured: Boolean(process.env.ADMIN_EMAIL_ALLOWLIST),
 })
 const port = Number(process.env.PORT || 3001)
 

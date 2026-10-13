@@ -32,8 +32,8 @@ function createIsolatedDatabase() {
     const duplicate = checks.find(([, matches]) => rows.some(matches))
     if (duplicate) throw { code: '23505', constraint: duplicate[0] }
     const stored = { ...registration }
-    rows.push(stored)
-    return stored
+    rows.push({ ...stored, qr_token: `${rows.length + 1}`.padStart(64, '0'), fallback_id: 1000 + rows.length, email: registration.email })
+    return rows[rows.length - 1]
   }
   return {
     rows,

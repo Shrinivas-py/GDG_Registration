@@ -16,10 +16,14 @@ test('successful registration normalizes fields and supports no USN', async () =
   const saved = []
   const response = await request(appWith(async (value) => {
     saved.push(value)
-    return { id: 'registration-id' }
+    return { id: 'registration-id', qr_token: 'a'.repeat(64), fallback_id: 1000, email: 'ada@example.com' }
   })).post('/api/registrations').send({ ...valid, usn: '', name: '  Ada   Lovelace  ', sr_no: ' 24-0540 ' })
   assert.equal(response.status, 201)
   assert.equal(response.body.success, true)
+  assert.equal(response.body.ticket.reference, 'GDG-' + 'a'.repeat(8).toUpperCase())
+  assert.equal('token' in response.body.ticket, false)
+  assert.ok(response.body.ticket.qr_data_url.startsWith('data:image/png;base64,'))
+  assert.equal(response.body.ticket.participant.name, 'Ada Lovelace')
   assert.equal(saved[0].name, 'Ada Lovelace')
   assert.equal(saved[0].sr_no, '24-0540')
   assert.equal(saved[0].usn, null)
@@ -28,8 +32,8 @@ test('successful registration normalizes fields and supports no USN', async () =
 test('two registrations without USN are both accepted by the API', async () => {
   let calls = 0
   const response = await Promise.all([
-    request(appWith(async (value) => { calls += 1; assert.equal(value.usn, null); return {} })).post('/api/registrations').send({ ...valid, usn: '', sr_no: '24-0541', email: 'one@example.com' }),
-    request(appWith(async (value) => { calls += 1; assert.equal(value.usn, null); return {} })).post('/api/registrations').send({ ...valid, usn: '', sr_no: '24-0542', email: 'two@example.com' }),
+    request(appWith(async (value) => { calls += 1; assert.equal(value.usn, null); return { qr_token: 'b'.repeat(64), fallback_id: 1001, email: 'one@example.com' } })).post('/api/registrations').send({ ...valid, usn: '', sr_no: '24-0541', email: 'one@example.com' }),
+    request(appWith(async (value) => { calls += 1; assert.equal(value.usn, null); return { qr_token: 'c'.repeat(64), fallback_id: 1002, email: 'two@example.com' } })).post('/api/registrations').send({ ...valid, usn: '', sr_no: '24-0542', email: 'two@example.com' }),
   ])
   assert.deepEqual(response.map((item) => item.status), [201, 201])
   assert.equal(calls, 2)
@@ -52,7 +56,7 @@ test('missing and invalid values return 400', async () => {
 
 test('USN accepts lowercase after normalization and rejects wrong format', async () => {
   let saved
-  const response = await request(appWith(async (value) => { saved = value; return {} })).post('/api/registrations').send({ ...valid, usn: '1js24is160' })
+  const response = await request(appWith(async (value) => { saved = value; return { qr_token: 'd'.repeat(64), fallback_id: 1003, email: valid.email } })).post('/api/registrations').send({ ...valid, usn: '1js24is160' })
   assert.equal(response.status, 201)
   assert.equal(saved.usn, '1JS24IS160')
 
@@ -107,6 +111,13 @@ test('check violations and database failures are safe', async () => {
   const failure = await request(appWith(async () => { throw new Error('database unavailable') })).post('/api/registrations').send(valid)
   assert.equal(failure.status, 500)
   assert.equal(failure.body.success, false)
+})
+
+test('does not report success when the saved registration has no ticket token', async () => {
+  const response = await request(appWith(async () => ({ id: 'registration-id' }))).post('/api/registrations').send(valid)
+  assert.equal(response.status, 500)
+  assert.equal(response.body.success, false)
+  assert.equal(response.body.ticket, undefined)
 })
 
 test('honeypot returns fake success without inserting', async () => {

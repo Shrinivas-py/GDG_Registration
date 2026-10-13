@@ -22,6 +22,27 @@ VITE_API_BASE_URL=http://localhost:3001
 
 `SUPABASE_SECRET_KEY` must remain server-only. Never rename it with a `VITE_` prefix or put it in frontend code. `.env` is ignored by git.
 
+Admin authentication also requires the following values:
+
+```env
+ADMIN_EMAIL_ALLOWLIST=admin1@example.com,admin2@example.com
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-browser-safe-supabase-anon-key
+```
+
+`ADMIN_EMAIL_ALLOWLIST` is read only by the API and is the authoritative authorization
+list. Keep it limited to approved team addresses; changing it requires an API restart.
+The Vite values are public browser configuration used only to call Supabase Auth
+from the admin sign-in form. The Supabase secret key remains server-only and must
+never be included in frontend variables. Admins sign in with their pre-created
+Supabase email/password account; the API still verifies the bearer token and
+server-side allowlist before every protected request.
+
+The application does not send transactional email. Registrations return the ticket
+immediately so the participant can download the PNG/PDF ticket. Participants can
+recover an existing ticket by supplying the registered Sr. No.; the
+rate-limited recovery response contains the QR image data but never a raw QR token.
+
 ## Supabase setup
 
 Before resetting an existing installation, open the Supabase Dashboard SQL Editor and paste/run the complete contents of [`supabase/row-count.sql`](./supabase/row-count.sql). It checks the row counts of the two legacy tables.
@@ -30,9 +51,9 @@ Before resetting an existing installation, open the Supabase Dashboard SQL Edito
 - If either count is non-zero, do not run the reset. Preserve the data and request an approved forward-only migration decision; this repository does not infer or merge identities.
 - After a successful setup, paste/run [`supabase/verify.sql`](./supabase/verify.sql) in the SQL Editor and confirm the expected table, columns, constraints, indexes, RLS, and grants.
 
-The setup schema includes the future QR and check-in columns but this phase does not use them.
+The setup schema includes the QR ticket, fallback ID, legacy email-delivery, recovery-token, and future check-in columns. Email-delivery and recovery-token columns/tables are retained for schema compatibility but are not used by the application.
 
-For an existing installation, apply [`supabase/identifier-constraints.sql`](./supabase/identifier-constraints.sql) as a forward-only migration. It changes only the identifier check constraints and does not drop tables or registration rows.
+For an existing installation, apply [`supabase/identifier-constraints.sql`](./supabase/identifier-constraints.sql) and then [`supabase/phase-2-email-recovery.sql`](./supabase/phase-2-email-recovery.sql) as forward-only migrations. Do not run either against a live project until the migration has been reviewed and approved. Verify Phase 2 with [`supabase/phase-2-verify.sql`](./supabase/phase-2-verify.sql). The Phase 2 migration does not drop tables or registration rows. There is no rollback that removes the new columns or recovery table; if deployment must be reverted, leave the additive schema in place and roll back application code.
 
 ## Install and run
 
@@ -53,8 +74,25 @@ The frontend runs at `http://localhost:5173` and the API at `http://localhost:30
 
 - `GET /api/health` returns a minimal health response.
 - `POST /api/registrations` accepts `name`, `sr_no`, optional `usn`, `email`, `branch`, and `year`.
+- A successful registration returns an opaque `ticket.token`, a stable `ticket.reference`, and display-safe participant details for the confirmation ticket. The token is the only QR payload.
+- `POST /api/ticket-recovery` recovers an existing ticket when the Sr. No. matches. Sr. No. is database-unique; the endpoint never creates a registration or changes the QR token.
+- `POST /api/admin/ticket-recovery` lets an authenticated allowlisted admin recover a ticket using a fallback ID, ticket reference, or USN. Raw QR tokens are not accepted for this recovery operation.
+- `GET /api/admin/dashboard` returns database-backed registered, checked-in, and remaining totals for an authorized admin.
+- `GET /api/admin/attendees` provides authorized server-side pagination, search, and `checked_in=true|false` filtering.
+- `GET /api/admin/attendees.csv` and `/api/admin/attendees.xlsx` provide authorized formula-safe exports without QR tokens or recovery secrets.
+- `POST /api/admin/check-in/lookup` supports protected lookup by one opaque QR token, ticket reference, fallback ID, or USN without returning the QR token.
+- `POST /api/admin/check-in` records a first check-in using a database-conditional update; repeated scans return the original check-in timestamp.
+- `GET /api/admin/attendance` and the attendance CSV/XLSX endpoints provide protected attendance records and bounded exports.
+
+XLSX files are generated server-side in the fixed export format without the
+vulnerable `xlsx`/SheetJS package. The implementation uses the MIT-licensed
+`fflate` ZIP library and writes only the required workbook XML parts. CSV and
+XLSX exports retain the same fields and formula-injection protection.
 - Responses use `{ success, message }`; invalid input is `400`, duplicate identifiers are `409`, rate limits are `429`, and unexpected database failures are `500`.
 - There is no public registration listing, edit, delete, or export endpoint.
+- `GET /api/admin/session` requires `Authorization: Bearer <Supabase access token>`.
+  The API verifies the token with Supabase Auth and checks the verified email against
+  `ADMIN_EMAIL_ALLOWLIST`; browser-supplied email or role fields are ignored.
 
 The server normalizes input before validation, performs one direct insert, and relies on database uniqueness constraints for race-safe duplicate detection.
 
@@ -72,21 +110,46 @@ $env:LOAD_TEST_URL="http://localhost:3001"; npm run load-test
 ```
 
 ## still more to go 
-Phase 1 — Registration backend
-Existing registration form, validation, Supabase and application tests.
+Phase 1 — Registration backend and QR tickets
+The registration form, validation, Supabase persistence, opaque QR tickets, confirmation screen, and PNG/PDF downloads are implemented and tested in application code.
 
 
-Phase 2 — QR tickets Current phase
-Generate a unique secure ticket, save it in the database, show it on the success screen, and let students download it.
+Phase 2 — Ticket delivery and fallback ID
+Return the ticket directly after registration, assign a unique database-enforced four-digit participant ID, and provide protected admin-assisted recovery without email.
 
+Phase 3 — Admin portal
+Google/Supabase Auth sign-in, server-verified admin authorization, logout, and a
+protected portal are implemented.
 
-Phase 3 — Email delivery
-Send each student their ticket and QR code by email.
+Phase 4 — Admin dashboard, attendee management, and exports
+Database-backed counts, paginated/searchable attendee viewing, and CSV/XLSX exports
+are implemented. Check-in mutations and QR scanning remain deferred to Phase 5.
 
-Phase 4 — Admin portal
-Secure login, registration management and attendance overview.
+Phase 5 — QR scanning, manual check-in, and attendance reports
+The authorized dashboard now includes a rear-camera QR scanner when supported, manual
+lookup by fallback ID, ticket reference, or USN, atomic server-side check-in, attendance
+counts, recent check-ins, filters, and attendance exports. Camera access is requested
+only after an authorized admin opens the scanner and requires HTTPS or localhost.
 
-Phase 5 — Event-day scanning
+### Google OAuth setup
+
+1. In Supabase Dashboard, enable Google under **Authentication → Providers**.
+2. Create a Google OAuth web application in Google Cloud Console.
+3. Add the Supabase-provided callback URL shown by the Google provider configuration
+   to Google's authorized redirect URIs, and configure the client ID/secret in
+   Supabase. Do not put the Google client secret in this repository.
+4. Add the local and production site URLs under Supabase **Authentication → URL
+   Configuration**, including `/gdg-control-panel-7x9` as the application redirect target where
+   appropriate.
+5. Set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and the server-side
+   `ADMIN_EMAIL_ALLOWLIST`, then restart both applications.
+
+An allowlisted Google account is still denied if its verified Supabase Auth email is
+not in the server allowlist. Removing an address from the allowlist takes effect
+after the API restarts. The current phase intentionally exposes no attendee data or
+admin operations.
+
+Phase 4 — Event-day scanning
 Verify tickets against Supabase and automatically record attendance, rejecting invalid and previously used tickets.
 
 
