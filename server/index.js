@@ -19,4 +19,9 @@ const app = createApp({
 })
 const port = Number(process.env.PORT || 3001)
 
-app.listen(port, () => console.log(`Registration API listening on port ${port}`))
+const server = app.listen(port, () => console.log(`Registration API listening on port ${port}`))
+server.on('error', (e) => console.error('Server error:', e.message))
+server.on('close', () => console.error('Server closed'))
+process.on('uncaughtException', (e) => console.error('Uncaught:', e.message))
+process.on('unhandledRejection', (e) => console.error('Unhandled rejection:', e?.message || e))
+process.on('exit', (code) => console.error('Process exiting with code', code))
