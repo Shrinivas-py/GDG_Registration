@@ -99,7 +99,7 @@ Verify tickets against Supabase and automatically record attendance, rejecting i
 4	New Sr. No., email shrinivas.rjahagirdar8@gmail.com (dot added)	“email already registered”
 5	New Sr. No., email shrinivasrjahagirdar8+test@gmail.com	“email already registered”
 
-Should succeed
+Should succeed!!
 
 #	What to enter	Expected
 6	24-0542, no USN, a@test.com	saved
