@@ -334,6 +334,9 @@ export function createApp({
       if (error?.code === 'P0001' && `${error?.message || ''}`.includes('fallback ID namespace exhausted')) {
         return res.status(503).json({ success: false, message: 'Registration is temporarily unavailable. Please try again later.' })
       }
+      if (error?.code === '42501') {
+        return res.status(403).json({ success: false, message: 'Registrations are now closed.' })
+      }
       console.error('Registration database request failed:', { code: error?.code || 'unknown', message: error?.message })
       return res.status(500).json({ success: false, message: 'Registration could not be saved. Please try again later.' })
     }
