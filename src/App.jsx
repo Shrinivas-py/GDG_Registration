@@ -596,7 +596,9 @@ function Admin() {
       setState('signed-out')
       return
     }
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/admin/session`, {
+    const query = new URLSearchParams()
+    if (email.trim()) query.set('email', email.trim())
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/admin/session?${query}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     })
     const payload = await response.json().catch(() => ({}))

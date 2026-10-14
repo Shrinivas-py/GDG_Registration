@@ -84,3 +84,28 @@ test('rate limits repeated admin authentication requests', async () => {
   )))
   assert.equal(responses.at(-1).status, 429)
 })
+
+test('counts failed admin authentications but skips successful requests', async () => {
+  const failedApp = createApp({
+    adminAuth: async (_req, res) => res.status(403).json({ success: false }),
+    adminAuthConfigured: true,
+    rateLimits: { adminLoginLimit: 2, adminSessionLimit: 20 },
+  })
+  const failed = await Promise.all(Array.from({ length: 3 }, () => (
+    request(failedApp).get('/api/admin/session').query({ email: 'failed@example.com' }).set('Authorization', '******')
+  )))
+  assert.deepEqual(failed.map((response) => response.status), [403, 403, 429])
+
+  const successfulApp = createApp({
+    adminAuth: async (req, _res, next) => {
+      req.adminUser = { id: 'admin-1', email: 'approved@example.com' }
+      next()
+    },
+    adminAuthConfigured: true,
+    rateLimits: { adminLoginLimit: 1, adminSessionLimit: 20 },
+  })
+  const successful = await Promise.all(Array.from({ length: 11 }, () => (
+    request(successfulApp).get('/api/admin/session').query({ email: 'approved@example.com' }).set('Authorization', '******')
+  )))
+  assert.ok(successful.every((response) => response.status === 200))
+})

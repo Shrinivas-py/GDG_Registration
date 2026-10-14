@@ -18,6 +18,7 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SECRET_KEY=your-server-only-supabase-secret-key
 FRONTEND_ORIGIN=http://localhost:5173
 VITE_API_BASE_URL=http://localhost:3001
+TRUST_PROXY=false
 ```
 
 `SUPABASE_SECRET_KEY` must remain server-only. Never rename it with a `VITE_` prefix or put it in frontend code. `.env` is ignored by git.
@@ -37,6 +38,23 @@ from the admin sign-in form. The Supabase secret key remains server-only and mus
 never be included in frontend variables. Admins sign in with their pre-created
 Supabase email/password account; the API still verifies the bearer token and
 server-side allowlist before every protected request.
+
+Set `TRUST_PROXY` to the number of trusted reverse-proxy hops in production (for
+example, `1` when the app is directly behind one load balancer). It may also be
+`true` or `false`; keep it `false` for direct local access. This setting controls
+which client IP Express uses for public rate limiting, so do not enable it unless
+the proxy path is controlled by the deployment.
+
+Rate limits are independent by route group and configurable with
+`REGISTRATION_RATE_LIMIT` (default `300`), `ADMIN_LOGIN_RATE_LIMIT` (default
+`10`), `ADMIN_SESSION_RATE_LIMIT` (default `120`), `CHECK_IN_RATE_LIMIT`
+(default `600`), and `ADMIN_EXPORT_RATE_LIMIT` (default `30`). Their windows use
+`RATE_LIMIT_WINDOW_MS` (default 15 minutes), with `*_WINDOW_MS` route-specific
+overrides available. Failed admin session authentications are counted by IP and
+submitted email; successful authentications are not counted. Authenticated
+session, check-in/scan, and export limits are keyed to the verified admin rather
+than the client IP. Registration duplicates remain protected by database
+uniqueness constraints.
 
 The application does not send transactional email. Registrations return the ticket
 immediately so the participant can download the PNG/PDF ticket. Participants can

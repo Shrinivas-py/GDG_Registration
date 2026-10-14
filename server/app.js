@@ -1,7 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
-import rateLimit from 'express-rate-limit'
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 import QRCode from 'qrcode'
 import { validateRegistration } from './validation.js'
 import { ticketReference } from './ticket.js'
@@ -96,14 +96,40 @@ function recoveryInput(body) {
   return srNo
 }
 
+function adminKey(req) {
+  return req.adminUser?.id || req.adminUser?.email || 'authenticated-admin'
+}
+
+function emailKey(req) {
+  const email = typeof req.body?.email === 'string'
+    ? req.body.email.trim().toLowerCase()
+    : typeof req.query?.email === 'string' ? req.query.email.trim().toLowerCase() : 'unknown-email'
+  return `${ipKeyGenerator(req.ip)}:${email}`
+}
+
+function createLimiter({ limit, windowMs, message, keyGenerator, skipSuccessfulRequests = false }) {
+  return rateLimit({
+    windowMs,
+    limit,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    keyGenerator,
+    skipSuccessfulRequests,
+    handler: (_req, res) => res.status(429).json({ success: false, message }),
+  })
+}
+
 export function createApp({
   repository,
   adminAuth,
   adminAuthConfigured = false,
   frontendOrigin = 'http://localhost:5173',
+  trustProxy = false,
+  rateLimits = {},
 } = {}) {
   const app = express()
   app.disable('x-powered-by')
+  app.set('trust proxy', trustProxy)
   app.use(helmet())
   app.use(cors({
     origin: (origin, callback) => {
@@ -113,32 +139,47 @@ export function createApp({
     methods: ['GET', 'POST', 'OPTIONS'],
   }))
   app.use(express.json({ limit: '10kb' }))
-  app.use('/api/registrations', rateLimit({
-    windowMs: 15 * 60 * 1000,
-    limit: 120,
-    standardHeaders: 'draft-8',
-    legacyHeaders: false,
-    handler: (_req, res) => res.status(429).json({ success: false, message: 'Too many registration attempts. Please try again later.' }),
+  const windowMs = 15 * 60 * 1000
+  app.use('/api/registrations', createLimiter({
+    windowMs: rateLimits.registrationWindowMs || windowMs,
+    limit: rateLimits.registrationLimit || 300,
+    message: 'Too many registration attempts. Please try again later.',
   }))
-  app.use('/api/ticket-recovery', rateLimit({
-    windowMs: 15 * 60 * 1000,
-    limit: 5,
-    standardHeaders: 'draft-8',
-    legacyHeaders: false,
-    handler: (_req, res) => res.status(429).json({ success: false, message: 'Too many recovery attempts. Please try again later.' }),
+  app.use('/api/ticket-recovery', createLimiter({
+    windowMs: rateLimits.recoveryWindowMs || windowMs,
+    limit: rateLimits.recoveryLimit || 5,
+    message: 'Too many recovery attempts. Please try again later.',
   }))
-  app.use('/api/admin', rateLimit({
-    windowMs: 15 * 60 * 1000,
-    limit: 30,
-    standardHeaders: 'draft-8',
-    legacyHeaders: false,
-    handler: (_req, res) => res.status(429).json({ success: false, message: 'Too many authentication attempts. Please try again later.' }),
+  app.use('/api/admin/session', createLimiter({
+    windowMs: rateLimits.adminLoginWindowMs || windowMs,
+    limit: rateLimits.adminLoginLimit || 10,
+    message: 'Too many authentication attempts. Please try again later.',
+    keyGenerator: emailKey,
+    skipSuccessfulRequests: true,
   }))
   app.use('/api/admin', (req, res, next) => {
     if (!adminAuthConfigured) return res.status(503).json({ success: false, message: 'Admin authentication is not configured.' })
     if (!adminAuth) return res.status(503).json({ success: false, message: 'Admin authentication is unavailable.' })
     return adminAuth(req, res, next)
   })
+  app.use('/api/admin/session', createLimiter({
+    windowMs: rateLimits.adminSessionWindowMs || windowMs,
+    limit: rateLimits.adminSessionLimit || 120,
+    message: 'Too many admin session checks. Please try again later.',
+    keyGenerator: adminKey,
+  }))
+  app.use('/api/admin/check-in', createLimiter({
+    windowMs: rateLimits.checkInWindowMs || windowMs,
+    limit: rateLimits.checkInLimit || 600,
+    message: 'Too many check-in attempts. Please try again later.',
+    keyGenerator: adminKey,
+  }))
+  app.use(['/api/admin/attendees.csv', '/api/admin/attendees.xlsx', '/api/admin/attendance.csv', '/api/admin/attendance.xlsx'], createLimiter({
+    windowMs: rateLimits.exportWindowMs || windowMs,
+    limit: rateLimits.exportLimit || 30,
+    message: 'Too many export requests. Please try again later.',
+    keyGenerator: adminKey,
+  }))
 
   app.get('/api/health', (_req, res) => res.status(200).json({ success: true, message: 'ok' }))
 

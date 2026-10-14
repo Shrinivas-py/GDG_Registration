@@ -76,6 +76,19 @@ test('allows an authenticated manual lookup and rejects a missing bearer token',
   assert.equal((await request(app).post('/api/admin/check-in/lookup').send({ fallback_id: '2508' })).status, 401)
 })
 
+test('does not block scan requests based on the client IP', async () => {
+  const app = adminApp({
+    lookupAdminAttendee: async () => ({ kind: 'not_found' }),
+  })
+  const responses = await Promise.all(Array.from({ length: 31 }, () => (
+    request(app)
+      .post('/api/admin/check-in/lookup')
+      .set('Authorization', '******')
+      .send({ fallback_id: '2508' })
+  )))
+  assert.ok(responses.every((response) => response.status !== 429))
+})
+
 test('supports manual lookup and requires explicit check-in confirmation', async () => {
   let checkIns = 0
   const app = adminApp({
