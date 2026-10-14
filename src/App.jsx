@@ -11,6 +11,7 @@ import chapterBrand from './assets/image4.jpeg'
 import { normalizeSrNo, normalizeUsn, validateSrNo, validateUsn } from '../shared/identifierValidation.js'
 import { supabaseAuth } from './adminAuth.js'
 import { ADMIN_PATH, LEGACY_ADMIN_PATH } from './adminRoute.js'
+import { CalendarDays, MapPin, Clock } from 'lucide-react'
 
 const branches = ['CSE', 'ISE', 'CSE(AIML)', 'ECE', 'EIE', 'RA', 'MECH', 'CIV']
 const years = ['1st Year', '2nd Year', '3rd Year', '4th Year']
@@ -226,12 +227,29 @@ function RegistrationPage() {
       <img className="chapter-brand" src={chapterBrand} alt="Google Developer Group, JSS Academy of Technical Education, Bengaluru" />
       <p className="kicker">GDG Chapter 2.0</p>
       <h1>Bring your<br /><em>curiosity.</em></h1>
-      <p className="intro-copy">Register your interest in joining the GDG Chapter 2.0 student community. Tell us a little about yourself to get started.</p>
+      <p style={{ color: '#5f6368', fontSize: 18, lineHeight: 1.7, margin: 0 }}>
+  We're beginning a new tenure with GDG Chapter 2.0, and we're kicking it off with a peer talk by our lead. Register below to reserve your spot.
+</p>
+
+<div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 12, color: '#5f6368', fontSize: 16 }}>
+  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+    <CalendarDays size={20} color="#1a73e8" />
+    <span><strong style={{ color: '#202124' }}>Date:</strong> 16th October 2026</span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+    <MapPin size={20} color="#1a73e8" />
+    <span><strong style={{ color: '#202124' }}>Venue:</strong> Sem Hall 1</span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+    <Clock size={20} color="#1a73e8" />
+    <span><strong style={{ color: '#202124' }}>Time:</strong> 2:00 PM to 4:00 PM</span>
+  </div>
+</div>
       <div className="intro-note"><ShieldCheck size={18} /><span>All fields marked with <b>*</b> are required.</span></div>
-      <div className="info-visuals" aria-label="About GDG and the chapter">
+      {/* <div className="info-visuals" aria-label="About GDG and the chapter">
         <img src={chapterInfo} alt="Who are we? The official Google Developer Group chapter at JSS Academy of Technical Education, Bengaluru." />
         <img src={gdgInfo} alt="What is GDG? Google Developer Groups are communities of developers, learners, and technology enthusiasts." />
-      </div>
+      </div> */}
     </section>
     <section className="form-card" aria-labelledby="registration-title">
       <div className="form-card-head"><div><p className="kicker">Chapter 2.0</p><h2 id="registration-title">Register your interest</h2></div><span className="step-badge">01 / 01</span></div>
