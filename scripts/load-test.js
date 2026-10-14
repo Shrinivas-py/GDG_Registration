@@ -1,5 +1,5 @@
 const baseUrl = process.env.LOAD_TEST_URL || 'http://localhost:3001'
-const count = Number(process.env.LOAD_TEST_COUNT || 100)
+const count = Number(process.env.LOAD_TEST_COUNT || 250)
 const runId = Date.now()
 
 const requests = Array.from({ length: count }, (_, index) => fetch(`${baseUrl}/api/registrations`, {
