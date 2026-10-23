@@ -1,4 +1,4 @@
-// export const ADMIN_PATH = '/gdg-control-panel-7x9'
+export const ADMIN_PATH = '/gdg-control-panel-7x9'
 export const PUBLIC_PATH = '/'
 export const LEGACY_ADMIN_PATH = '/admin'
 
